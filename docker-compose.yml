@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik
+    command:
+      - "--providers.docker=true"
+    ports:
+      - "80:80"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  backend-sso:
+    build: backend-sso
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend-sso.rule=PathPrefix(`/sso`)"
+  backend-secured:
+    build: backend-secured
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend-secured.rule=!PathPrefix(`/sso`)"
+      - "traefik.http.routers.backend-secured.middlewares=custom-auth"
+      - "traefik.http.middlewares.custom-auth.forwardauth.address=http://auth:3000"
+  auth:
+    build: auth
+  redis:
+    image: redis
